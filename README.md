@@ -40,18 +40,18 @@ In full mode, the learning phase has 144 trials: 24 words x 6 presentations.
 The app is static and GitHub Pages friendly. Use the same participant ID and session code for both sessions.
 
 ```text
-Vocabulary_Platform/learning.html?code=A&participant=001
-Vocabulary_Platform/tests.html?code=A&participant=001
+Vocabulary_Platform/learning.html?code=E&participant=001
+Vocabulary_Platform/tests.html?code=E&participant=001
 ```
 
 Equivalent query parameters also work on `index.html`:
 
 ```text
-Vocabulary_Platform/?phase=learning&code=A&participant=001
-Vocabulary_Platform/?phase=tests&code=A&participant=001
+Vocabulary_Platform/?phase=learning&code=E&participant=001
+Vocabulary_Platform/?phase=tests&code=E&participant=001
 ```
 
-Use `mode=demo` for a short smoke test and `mode=full` for the full schedule. The neutral public codes are `A`, `B`, and `C`; legacy `accent=J`, `accent=E`, and `accent=C` links still work for researcher-side compatibility but should not be distributed to participants. The participant UI exposes these as a dropdown rather than free text.
+Use `mode=demo` for a short smoke test and `mode=full` for the full schedule. The public session codes are `E`, `J`, and `C`, corresponding to the English, Japanese, and Chinese conditions. The participant UI exposes these as a dropdown rather than free text.
 
 ## Interruptions
 

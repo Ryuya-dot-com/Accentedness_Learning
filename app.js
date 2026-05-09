@@ -30,8 +30,8 @@
   };
 
   const DISPLAY_CODES = {
-    japanese: "A",
-    english: "B",
+    japanese: "J",
+    english: "E",
     chinese: "C",
   };
 
