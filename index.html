@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>語彙課題</title>
+    <title>学習セッション</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -11,9 +11,9 @@
       <section id="setup-panel" class="panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">語彙課題</p>
-            <h1>語彙学習タスク</h1>
-            <p class="lead">担当者から案内された項目を選び、画面の指示に従って進めてください。</p>
+            <p class="eyebrow">Learning Session</p>
+            <h1>学習セッション</h1>
+            <p class="lead">担当者から案内された項目を選び、表示された意味と英単語の対応を覚えてください。</p>
           </div>
           <div class="session-badge">準備前</div>
         </div>
@@ -37,26 +37,17 @@
           </div>
         </section>
 
-        <details class="advanced-settings">
-          <summary>詳細設定</summary>
-          <div class="grid">
-            <label>
-              実施範囲
-              <select id="phase-mode">
-                <option value="learning">前半</option>
-                <option value="tests">後半</option>
-                <option value="full" selected>最初から最後まで</option>
-              </select>
-            </label>
-            <label class="checkbox-row">
-              <input id="auto-download" type="checkbox" checked />
-              <span>終了時にファイルを保存する</span>
-            </label>
-          </div>
-        </details>
+        <input id="phase-mode" type="hidden" value="learning" />
+        <div class="save-option">
+          <label class="checkbox-row">
+            <input id="auto-download" type="checkbox" checked />
+            <span>終了時にファイルを保存する</span>
+          </label>
+        </div>
 
         <div class="summary">
-          <p>開始後は、英単語を声に出す課題、音声を聞いて日本語訳を声に出す課題、音声と意味を判断する課題が順番に表示されます。</p>
+          <p>このページでは学習セッションのみを行います。</p>
+          <p>開始後は、表示された意味を見ながら英単語の音声を聞いて覚えます。</p>
           <p>途中でブラウザを閉じず、担当者の指示があるまで同じ画面で続けてください。</p>
         </div>
         <div id="recovery-card" class="recovery-card hidden">

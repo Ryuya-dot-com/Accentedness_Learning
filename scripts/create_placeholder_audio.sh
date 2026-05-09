@@ -27,22 +27,9 @@ copy_accent() {
   done
 }
 
-copy_test_accent() {
-  local accent="$1"
-  local alias="$2"
-  local source_talker="$3"
-  local src="$SOURCE_DIR/$source_talker"
-  local dest="$ROOT_DIR/audio/$accent/$alias"
-  mkdir -p "$dest"
-  find "$src" -maxdepth 1 -type f -name "*.wav" -exec cp {} "$dest/" \;
-}
-
 copy_accent "english" "e1" "e2" "e3" "e4" "e5" "e6"
 copy_accent "japanese" "j1" "j2" "j3" "j4" "j5" "j6"
 copy_accent "chinese" "c1" "c2" "c3" "c4" "c5" "c6"
-copy_test_accent "english" "e_test" "m1_guy"
-copy_test_accent "japanese" "j_test" "f1_aria"
-copy_test_accent "chinese" "c_test" "m2_christopher"
 
 cat <<MSG
 Created placeholder audio from:
@@ -50,11 +37,8 @@ Created placeholder audio from:
 
 Output:
   $ROOT_DIR/audio/english/{e1..e6}
-  $ROOT_DIR/audio/english/e_test
   $ROOT_DIR/audio/japanese/{j1..j6}
-  $ROOT_DIR/audio/japanese/j_test
   $ROOT_DIR/audio/chinese/{c1..c6}
-  $ROOT_DIR/audio/chinese/c_test
 
 These files are copied English TTS placeholders. Replace them before data collection.
 MSG

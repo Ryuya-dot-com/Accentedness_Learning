@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_vocab_exp2_v0.7.0";
+  const VERSION = "accented_learning_v0.8.0";
   const FULL_EXPOSURES_PER_WORD = 6;
   const LEARNING_ITI_MS = 650;
   const VISUAL_TO_AUDIO_MS = 750;
@@ -8,9 +8,9 @@
   const L2_TRANSLATION_RECORD_MS = 5000;
   const PRACTICE_RECORD_MS = 4000;
   const RESPONSE_KEYS = { no: "f", yes: "j" };
-  const PHASE_MODES = ["learning", "tests", "full"];
+  const PHASE_MODES = ["learning"];
   const TEST_ACCENT_IDS = ["english", "japanese", "chinese"];
-  const CHECKPOINT_PREFIX = "vocabulary_task_checkpoint:";
+  const CHECKPOINT_PREFIX = "accented_learning_checkpoint:";
   const MIN_RECORDING_RMS = 0.008;
   const CLIPPING_AMPLITUDE = 0.98;
   const MAX_CLIPPING_RATIO = 0.01;
@@ -42,21 +42,18 @@
       label: "Code J",
       basePath: "audio/japanese",
       talkers: ["j1", "j2", "j3", "j4", "j5", "j6"],
-      testTalkers: ["j_test"],
     },
     english: {
       id: "english",
       label: "Code E",
       basePath: "audio/english",
       talkers: ["e1", "e2", "e3", "e4", "e5", "e6"],
-      testTalkers: ["e_test"],
     },
     chinese: {
       id: "chinese",
       label: "Code C",
       basePath: "audio/chinese",
       talkers: ["c1", "c2", "c3", "c4", "c5", "c6"],
-      testTalkers: ["c_test"],
     },
   };
 
@@ -528,106 +525,18 @@
       });
     }
 
-    const testWords = seededShuffle(allWords, mulberry32(numericId * 1000 + 23));
-    const l2ToL1AccentIds = buildBalancedTestAccentIds(testWords.length, numericId, 41);
-    const l2ToL1Trials = testWords.map((item, index) => ({
-      phase: "l2_to_l1",
-      item,
-      condition: conditionByWord.get(item.word),
-      audioAccentId: l2ToL1AccentIds[index],
-      talker: pickTestTalker(ACCENT_SETS[l2ToL1AccentIds[index]], numericId, index),
-    }));
-    const productionTrials = seededShuffle(allWords, mulberry32(numericId * 1000 + 29)).map((item) => ({
-      phase: "picture_naming",
-      item,
-      condition: conditionByWord.get(item.word),
-    }));
-    const matchingWords = testWords;
-    const deranged = derange(matchingWords, mulberry32(numericId * 1000 + 31));
-    const matchingBaseTrials = matchingWords.flatMap((item, index) => ([
-      {
-        phase: "picture_matching",
-        item,
-        audioItem: item,
-        visualCondition: conditionByWord.get(item.word),
-        audioCondition: conditionByWord.get(item.word),
-        match: true,
-        expected_key: RESPONSE_KEYS.yes,
-      },
-      {
-        phase: "picture_matching",
-        item,
-        audioItem: deranged[index],
-        visualCondition: conditionByWord.get(item.word),
-        audioCondition: conditionByWord.get(deranged[index].word),
-        match: false,
-        expected_key: RESPONSE_KEYS.no,
-      },
-    ]));
-    const matchingAccentIds = buildBalancedTestAccentIds(matchingBaseTrials.length, numericId, 43);
-    const matchingTrials = seededShuffle(matchingBaseTrials.map((trial, index) => ({
-      ...trial,
-      audioAccentId: matchingAccentIds[index],
-      talker: pickTestTalker(ACCENT_SETS[matchingAccentIds[index]], numericId, index),
-    })), mulberry32(numericId * 1000 + 37));
-    const pictureNamingPracticeTrials = PRACTICE_STIMULI.slice(0, 2).map((item, index) => ({
-      phase: "picture_naming_practice",
-      item,
-      practice: true,
-      practiceIndex: index + 1,
-    }));
-    const l2ToL1PracticeAccentIds = buildBalancedTestAccentIds(2, numericId, 47);
-    const l2ToL1PracticeTrials = PRACTICE_STIMULI.slice(2, 4).map((item, index) => ({
-      phase: "l2_to_l1_translation_practice",
-      item,
-      practice: true,
-      practiceIndex: index + 1,
-      audioAccentId: l2ToL1PracticeAccentIds[index],
-      talker: pickTestTalker(ACCENT_SETS[l2ToL1PracticeAccentIds[index]], numericId, index),
-    }));
-    const matchingPracticeBase = [
-      {
-        item: PRACTICE_STIMULI[0],
-        audioItem: PRACTICE_STIMULI[0],
-        match: true,
-        expected_key: RESPONSE_KEYS.yes,
-      },
-      {
-        item: PRACTICE_STIMULI[1],
-        audioItem: PRACTICE_STIMULI[2],
-        match: false,
-        expected_key: RESPONSE_KEYS.no,
-      },
-      {
-        item: PRACTICE_STIMULI[2],
-        audioItem: PRACTICE_STIMULI[2],
-        match: true,
-        expected_key: RESPONSE_KEYS.yes,
-      },
-      {
-        item: PRACTICE_STIMULI[3],
-        audioItem: PRACTICE_STIMULI[0],
-        match: false,
-        expected_key: RESPONSE_KEYS.no,
-      },
-    ];
-    const matchingPracticeAccentIds = buildBalancedTestAccentIds(matchingPracticeBase.length, numericId, 53);
-    const pictureMatchingPracticeTrials = matchingPracticeBase.map((trial, index) => ({
-      phase: "picture_matching_practice",
-      ...trial,
-      practice: true,
-      practiceIndex: index + 1,
-      visualCondition: "practice",
-      audioCondition: "practice",
-      audioAccentId: matchingPracticeAccentIds[index],
-      talker: pickTestTalker(ACCENT_SETS[matchingPracticeAccentIds[index]], numericId, index),
-    }));
+    const pictureNamingPracticeTrials = [];
+    const l2ToL1Trials = [];
+    const l2ToL1PracticeTrials = [];
+    const productionTrials = [];
+    const pictureMatchingPracticeTrials = [];
+    const matchingTrials = [];
 
     return {
       version: VERSION,
       participantId,
       numericId,
-      mode: "full",
+      mode: "learning",
       phaseMode,
       counterbalanceCell: counterbalanceCell + 1,
       accent,
@@ -636,9 +545,9 @@
       conditionOrder,
       singleTalker,
       multiTalkers,
-      testTalkersByAccent: Object.fromEntries(TEST_ACCENT_IDS.map((id) => [id, ACCENT_SETS[id].testTalkers])),
-      l2ToL1AccentCounts: countByValue(l2ToL1Trials.map((trial) => trial.audioAccentId)),
-      pictureMatchingAccentCounts: countByValue(matchingTrials.map((trial) => trial.audioAccentId)),
+      testTalkersByAccent: {},
+      l2ToL1AccentCounts: {},
+      pictureMatchingAccentCounts: {},
       exposures,
       allWords,
       conditionByWord: Object.fromEntries(conditionByWord),
@@ -1297,12 +1206,8 @@
       condition_order: assignment.conditionOrder,
       single_talker: assignment.singleTalker,
       multi_talkers: assignment.multiTalkers,
-      test_talkers_by_accent: assignment.testTalkersByAccent,
-      l2_to_l1_accent_counts: assignment.l2ToL1AccentCounts,
-      picture_matching_accent_counts: assignment.pictureMatchingAccentCounts,
       exposures_per_word: assignment.exposures,
       words: assignment.allWords.map((item) => ({ id: item.id, word: item.word, list: item.list, ja: item.ja })),
-      practice_words: PRACTICE_STIMULI.map((item) => ({ id: item.id, word: item.word, ja: item.ja })),
       condition_by_word: assignment.conditionByWord,
     }, null, 2));
     recordings.forEach((recording) => {
@@ -1354,16 +1259,7 @@
           `condition_order: ${assignment.conditionOrder.join(" > ")}`,
           `single_talker: ${assignment.singleTalker}`,
           `multi_talkers: ${assignment.multiTalkers.join(", ")}`,
-          `test_talkers: ${Object.entries(assignment.testTalkersByAccent).map(([id, talkers]) => `${id}:${talkers.join("/")}`).join(", ")}`,
-          `l2_test_accents: ${JSON.stringify(assignment.l2ToL1AccentCounts)}`,
-          `matching_test_accents: ${JSON.stringify(assignment.pictureMatchingAccentCounts)}`,
           `learning_trials: ${assignment.learningTrials.length}`,
-          `picture_naming_practice_trials: ${assignment.pictureNamingPracticeTrials.length}`,
-          `picture_naming_trials: ${assignment.productionTrials.length}`,
-          `l2_to_l1_practice_trials: ${assignment.l2ToL1PracticeTrials.length}`,
-          `l2_to_l1_trials: ${assignment.l2ToL1Trials.length}`,
-          `picture_matching_practice_trials: ${assignment.pictureMatchingPracticeTrials.length}`,
-          `picture_matching_trials: ${assignment.matchingTrials.length}`,
           `missing_images: ${assets.missingImages}`,
         ].join("\n"));
       } else {

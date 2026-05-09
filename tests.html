@@ -3,15 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>語彙課題</title>
+    <title>テストセッションへ移動</title>
     <script>
-      const target = new URL("./", window.location.href);
+      const target = new URL("https://ryuya-dot-com.github.io/Accentedness_Tests/");
       target.search = window.location.search;
-      target.searchParams.set("phase", "tests");
+      target.searchParams.delete("phase");
       window.location.replace(target.toString());
     </script>
   </head>
   <body>
-    <p>課題を開いています...</p>
+    <p>テストセッションを開いています...</p>
+    <p><a href="https://ryuya-dot-com.github.io/Accentedness_Tests/">開かない場合はこちら</a></p>
   </body>
 </html>

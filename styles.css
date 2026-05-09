@@ -153,11 +153,16 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
-.advanced-settings {
+.advanced-settings,
+.save-option {
   margin-top: 18px;
   border-top: 1px solid var(--panel-border);
   border-bottom: 1px solid var(--panel-border);
   padding: 14px 0;
+}
+
+.save-option .checkbox-row {
+  padding: 0;
 }
 
 .advanced-settings summary {
