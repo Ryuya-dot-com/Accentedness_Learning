@@ -27,9 +27,18 @@ Vocabulary_Platform/materials/Stimuli_24.xlsx
   - Within-block word order and test orders are seeded-randomized by participant ID.
 - Phases:
   - Learning.
-  - L2-to-L1 typed translation.
-  - Production recall with WAV recording.
-  - Picture matching with `F` = mismatch and `J` = match.
+  - Picture Naming Task: meaning/image cue to spoken English response, recorded as WAV.
+  - L2-to-L1 Translation Task: English-word audio cue to spoken Japanese translation, recorded as WAV.
+  - Picture Matching Task: meaning/image cue plus audio, with `F` = mismatch and `J` = match.
+- Test task order:
+  - Picture Naming Task.
+  - L2-to-L1 Translation Task.
+  - Picture Matching Task.
+- Practice trials:
+  - Picture Naming Task has two recorded practice trials with playback for microphone/volume checking.
+  - L2-to-L1 Translation Task has two recorded practice trials with audio playback and recording playback for volume checking.
+  - Picture Matching Task has four feedback practice trials with audio playback for volume checking.
+  - Practice rows are written to the CSV with `practice=1` and `exclude_from_analysis=1`.
 - Test audio policy:
   - Learning audio uses the assigned session accent only: `E`, `J`, or `C`.
   - Test audio uses separate test talker IDs, not the six learning talkers.
@@ -63,7 +72,7 @@ The public session codes are `E`, `J`, and `C`, corresponding to the English, Ja
 
 During a running session, the page warns before browser unload and writes a checkpoint to localStorage after each completed trial. Participants can use the `中断して保存` button to stop after the current trial and download a partial result package. If the browser is closed unexpectedly, the next visit shows the latest checkpoint so the partial CSV can be downloaded or cleared.
 
-Production recordings are included in the partial ZIP only when the participant uses the in-page interruption button while the tab is still open. If the browser is force-closed during a production recording, the localStorage checkpoint preserves trial metadata but cannot preserve the in-memory audio blob.
+Picture Naming and L2-to-L1 Translation recordings are included in the partial ZIP only when the participant uses the in-page interruption button while the tab is still open. If the browser is force-closed during a recording, the localStorage checkpoint preserves trial metadata but cannot preserve the in-memory audio blob.
 
 This is a partial-save workflow, not a true trial-level resume workflow. If a participant must continue later, keep the partial package and start a new assigned session; merge the files during scoring or exclude the interrupted run according to the study protocol.
 
@@ -104,6 +113,8 @@ bash scripts/create_placeholder_audio.sh
 
 These placeholder files are copied English TTS audio. They are for UI and timing development only. Replace them with the final Japanese-, English-, and Chinese-accent learning stimuli and the final test-only talker stimuli before collecting data.
 
+Use Google Chrome for data collection. The participant page blocks preparation in other browsers so audio playback and WAV recording are handled consistently.
+
 ## Image Layout
 
 Picture tasks will use images when present:
@@ -135,8 +146,10 @@ The platform downloads a ZIP containing:
 
 - `{participant}_results.csv`
 - `{participant}_assignment.json`
-- `recordings/*.wav` from the production task when the test session includes production
+- `recordings/picture_naming/*.wav`
+- `recordings/l2_to_l1_translation/*.wav`
+- `recordings/practice/*.wav`
 
 By default, the result package is downloaded automatically at the end of each session. The download button remains available for manual re-download. Add `autodownload=0` to the URL to disable automatic download.
 
-The CSV includes participant ID, phase mode, assigned learning accent condition, variability condition, test audio accent condition where applicable, talker, item, audio path, response, RT, correctness where applicable, and visual cue mode.
+The CSV includes participant ID, phase mode, assigned learning accent condition, variability condition, task name, practice/exclusion flags, test audio accent condition where applicable, talker, item, audio path, recording path, RT/correctness where applicable, and visual cue mode.
