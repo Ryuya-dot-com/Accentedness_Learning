@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tests - Accent Variability Vocabulary Platform</title>
+    <script>
+      const target = new URL("./", window.location.href);
+      target.search = window.location.search;
+      target.searchParams.set("phase", "tests");
+      window.location.replace(target.toString());
+    </script>
+  </head>
+  <body>
+    <p>Redirecting to test phases...</p>
+  </body>
+</html>

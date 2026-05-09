@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Accent Variability Vocabulary Platform</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <section id="setup-panel" class="panel">
+        <h1>Accent Variability Vocabulary Platform</h1>
+        <div class="grid">
+          <label>
+            参加者ID
+            <input id="participant-id" type="text" autocomplete="off" placeholder="例: 001" />
+          </label>
+          <label>
+            アクセント条件
+            <select id="accent-condition">
+              <option value="">J / E / C を選択</option>
+              <option value="japanese">J: Japanese-accent stimuli</option>
+              <option value="english">E: English-accent stimuli</option>
+              <option value="chinese">C: Chinese-accent stimuli</option>
+            </select>
+          </label>
+          <label>
+            セッション
+            <select id="phase-mode">
+              <option value="learning">Learning only</option>
+              <option value="tests">Tests only</option>
+              <option value="full">Full local pilot</option>
+            </select>
+          </label>
+          <label>
+            実行モード
+            <select id="run-mode">
+              <option value="full">Full experiment</option>
+              <option value="demo">Demo / smoke test</option>
+            </select>
+          </label>
+          <label class="checkbox-row">
+            <input id="auto-download" type="checkbox" checked />
+            <span>終了時に結果ファイルを自動ダウンロード</span>
+          </label>
+        </div>
+        <div class="summary">
+          <p>
+            Single / Multiple は参加者内、アクセント種別は参加者間で扱います。
+            仮選定した24語を12語ずつの2リストに分け、各語の学習提示回数は6回で揃えます。
+          </p>
+          <p>
+            GitHub Pages 公開時は <code>?phase=learning</code> と <code>?phase=tests</code> を分けて使えます。
+          </p>
+          <p>
+            画像ファイルがない語は、暫定的に日本語グロスを視覚手がかりとして表示します。
+            本番運用では <code>Vocabulary_Platform/images/</code> に語ごとの画像を追加してください。
+          </p>
+        </div>
+        <div class="actions">
+          <button id="prepare-btn">準備</button>
+          <button id="start-btn" disabled>開始</button>
+          <button id="download-btn" class="success" disabled>結果を再ダウンロード</button>
+        </div>
+      </section>
+
+      <section id="task-panel" class="task-panel" aria-live="polite">
+        <div id="progress">
+          <div id="progress-label"></div>
+          <div id="progress-track"><div id="progress-fill"></div></div>
+        </div>
+        <div id="stimulus-stage">
+          <div id="fixation">+</div>
+          <img id="stimulus-img" alt="" />
+          <div id="visual-card">
+            <div id="visual-label"></div>
+            <div id="visual-note"></div>
+          </div>
+          <div id="sound-cue">音声</div>
+          <div id="message"></div>
+          <input id="text-response" type="text" autocomplete="off" class="hidden" />
+        </div>
+        <div id="response-hint"></div>
+      </section>
+
+      <div id="status"></div>
+      <pre id="log"></pre>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="stimuli.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
