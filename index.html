@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Vocabulary Learning Task</title>
+    <title>語彙課題</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -11,9 +11,9 @@
       <section id="setup-panel" class="panel">
         <div class="panel-header">
           <div>
-            <p class="eyebrow">Vocabulary Session</p>
+            <p class="eyebrow">語彙課題</p>
             <h1>語彙学習タスク</h1>
-            <p class="lead">担当者から案内されたコードを入力し、画面の指示に従って進めてください。</p>
+            <p class="lead">担当者から案内された項目を選び、画面の指示に従って進めてください。</p>
           </div>
           <div class="session-badge">準備前</div>
         </div>
@@ -26,12 +26,12 @@
               <input id="participant-id" type="text" autocomplete="off" placeholder="例: 001" />
             </label>
             <label>
-              セッションコード
+              案内番号
               <select id="accent-condition">
                 <option value="">選択してください</option>
-                <option value="E">コード E</option>
-                <option value="J">コード J</option>
-                <option value="C">コード C</option>
+                <option value="E">E</option>
+                <option value="J">J</option>
+                <option value="C">C</option>
               </select>
             </label>
           </div>
@@ -41,16 +41,16 @@
           <summary>詳細設定</summary>
           <div class="grid">
             <label>
-              セッション
+              実施範囲
               <select id="phase-mode">
-                <option value="learning">パート1</option>
-                <option value="tests">パート2</option>
-                <option value="full">通し実施</option>
+                <option value="learning">前半</option>
+                <option value="tests">後半</option>
+                <option value="full">最初から最後まで</option>
               </select>
             </label>
             <label class="checkbox-row">
               <input id="auto-download" type="checkbox" checked />
-              <span>終了時にセッションファイルを保存する</span>
+              <span>終了時にファイルを保存する</span>
             </label>
           </div>
         </details>
@@ -61,11 +61,11 @@
         </div>
         <div id="recovery-card" class="recovery-card hidden">
           <div>
-            <strong>中断データがあります</strong>
+            <strong>保存途中の記録があります</strong>
             <span id="recovery-summary"></span>
           </div>
           <div class="recovery-actions">
-            <button id="recovery-download-btn" type="button" class="secondary">中断データを保存</button>
+            <button id="recovery-download-btn" type="button" class="secondary">途中の記録を保存</button>
             <button id="recovery-clear-btn" type="button" class="secondary">消去</button>
           </div>
         </div>

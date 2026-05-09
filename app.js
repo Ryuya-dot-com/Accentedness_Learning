@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_vocab_exp2_v0.5.0";
+  const VERSION = "accented_vocab_exp2_v0.5.1";
   const FULL_EXPOSURES_PER_WORD = 6;
   const LEARNING_ITI_MS = 650;
   const VISUAL_TO_AUDIO_MS = 750;
@@ -262,7 +262,7 @@
     a.click();
     URL.revokeObjectURL(a.href);
     a.remove();
-    setStatus("中断データを保存しました。");
+    setStatus("途中の記録を保存しました。");
   }
 
   function clearLatestCheckpoint() {
@@ -903,19 +903,19 @@
     }
     const accentId = normalizeAccentId(els.accentCondition.value);
     if (!accentId) {
-      setStatus("セッションコードを確認してください。");
+      setStatus("案内番号を確認してください。");
       return;
     }
     const phaseMode = els.phaseMode.value;
     if (!PHASE_MODES.includes(phaseMode)) {
-      setStatus("セッションを選択してください。");
+      setStatus("実施範囲を選択してください。");
       return;
     }
     els.prepareBtn.disabled = true;
     els.startBtn.disabled = true;
     els.downloadBtn.disabled = true;
     setLog("");
-    setStatus("セッションを準備しています...");
+    setStatus("準備しています...");
     try {
       const assignment = buildAssignment(participantId, accentId, phaseMode);
       const assets = await preloadAssets(assignment);
@@ -1030,7 +1030,7 @@
         }
       }
       if (assignment.phaseMode === "learning") {
-        showMessage("このセッションは終了しました。\nファイルを作成しています。");
+        showMessage("この課題は終了しました。\nファイルを作成しています。");
       } else {
         showMessage("終了しました。\nファイルを作成しています。");
       }
