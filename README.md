@@ -33,7 +33,7 @@ Vocabulary_Platform/materials/Stimuli_24.xlsx
 
 The original Experiment 2 used no-, moderate-, and high-variability conditions. This implementation follows the current requested two-level comparison: Single vs Multiple.
 
-In full mode, the learning phase has 144 trials: 24 words x 6 presentations.
+The learning phase has 144 trials: 24 words x 6 presentations.
 
 ## Separate Learning and Test URLs
 
@@ -51,7 +51,7 @@ Vocabulary_Platform/?phase=learning&code=E&participant=001
 Vocabulary_Platform/?phase=tests&code=E&participant=001
 ```
 
-Use `mode=demo` for a short smoke test and `mode=full` for the full schedule. The public session codes are `E`, `J`, and `C`, corresponding to the English, Japanese, and Chinese conditions. The participant UI exposes these as a dropdown rather than free text.
+The public session codes are `E`, `J`, and `C`, corresponding to the English, Japanese, and Chinese conditions. The participant UI exposes these as a dropdown rather than free text.
 
 ## Interruptions
 
@@ -111,8 +111,8 @@ python3 -m http.server 8765
 Then open:
 
 ```text
-http://127.0.0.1:8765/Vocabulary_Platform/learning.html?accent=J&mode=demo&participant=001
-http://127.0.0.1:8765/Vocabulary_Platform/tests.html?accent=J&mode=demo&participant=001
+http://127.0.0.1:8765/Vocabulary_Platform/learning.html?code=J&participant=001
+http://127.0.0.1:8765/Vocabulary_Platform/tests.html?code=J&participant=001
 ```
 
 ## Output

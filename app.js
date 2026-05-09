@@ -1,7 +1,6 @@
 (() => {
   const VERSION = "accented_vocab_exp2_v0.4.0";
   const FULL_EXPOSURES_PER_WORD = 6;
-  const DEMO_EXPOSURES_PER_WORD = 2;
   const LEARNING_ITI_MS = 650;
   const VISUAL_TO_AUDIO_MS = 750;
   const BREAK_EVERY_TRIALS = 25;
@@ -64,7 +63,6 @@
     accentCondition: document.getElementById("accent-condition"),
     sessionBadge: document.querySelector(".session-badge"),
     phaseMode: document.getElementById("phase-mode"),
-    runMode: document.getElementById("run-mode"),
     autoDownload: document.getElementById("auto-download"),
     prepareBtn: document.getElementById("prepare-btn"),
     startBtn: document.getElementById("start-btn"),
@@ -367,7 +365,7 @@
     return ACCENT_ALIASES[String(value || "").trim().toLowerCase()] || "";
   }
 
-  function buildAssignment(participantId, requestedAccent, mode, phaseMode) {
+  function buildAssignment(participantId, requestedAccent, phaseMode) {
     const numericId = Math.max(1, parseNumericId(participantId));
     const accentId = normalizeAccentId(requestedAccent);
     const accent = ACCENT_SETS[accentId];
@@ -383,12 +381,11 @@
       : ["multiple", "single"];
     const singleTalker = accent.talkers[talkerCell];
     const multiTalkers = rotate(accent.talkers, singleTalker);
-    const exposures = mode === "demo" ? DEMO_EXPOSURES_PER_WORD : FULL_EXPOSURES_PER_WORD;
-    const maxPerList = mode === "demo" ? 4 : Infinity;
+    const exposures = FULL_EXPOSURES_PER_WORD;
     const rng1 = mulberry32(numericId * 1000 + 11);
     const rng2 = mulberry32(numericId * 1000 + 17);
-    const singleWords = seededShuffle(stimuli.filter((item) => item.list === singleList), rng1).slice(0, maxPerList);
-    const multipleWords = seededShuffle(stimuli.filter((item) => item.list === multipleList), rng2).slice(0, maxPerList);
+    const singleWords = seededShuffle(stimuli.filter((item) => item.list === singleList), rng1);
+    const multipleWords = seededShuffle(stimuli.filter((item) => item.list === multipleList), rng2);
     const allWords = singleWords.concat(multipleWords);
     const conditionByWord = new Map();
     singleWords.forEach((item) => conditionByWord.set(item.word, "single"));
@@ -427,7 +424,7 @@
       item,
       condition: conditionByWord.get(item.word),
     }));
-    const matchingWords = mode === "demo" ? testWords.slice(0, 6) : testWords;
+    const matchingWords = testWords;
     const deranged = derange(matchingWords, mulberry32(numericId * 1000 + 31));
     const matchingTrials = seededShuffle(matchingWords.flatMap((item, index) => ([
       {
@@ -456,7 +453,7 @@
       version: VERSION,
       participantId,
       numericId,
-      mode,
+      mode: "full",
       phaseMode,
       counterbalanceCell: counterbalanceCell + 1,
       accent,
@@ -877,7 +874,7 @@
     setLog("");
     setStatus("セッションを準備しています...");
     try {
-      const assignment = buildAssignment(participantId, accentId, els.runMode.value, phaseMode);
+      const assignment = buildAssignment(participantId, accentId, phaseMode);
       const assets = await preloadAssets(assignment);
       prepared = { assignment, assets };
       els.startBtn.disabled = false;
@@ -1045,13 +1042,11 @@
     const params = new URLSearchParams(window.location.search);
     const accent = params.get("code") || params.get("group") || params.get("condition") || params.get("accent");
     const phase = params.get("phase");
-    const mode = params.get("mode");
     const pid = params.get("participant") || params.get("pid");
     const autoDownload = params.get("autodownload");
     const accentId = normalizeAccentId(accent);
     if (accentId) els.accentCondition.value = DISPLAY_CODES[accentId] || accent;
     if (phase && PHASE_MODES.includes(phase)) els.phaseMode.value = phase;
-    if (mode && ["full", "demo"].includes(mode)) els.runMode.value = mode;
     if (pid) els.participantId.value = pid;
     if (autoDownload !== null) {
       els.autoDownload.checked = !["0", "false", "no", "off"].includes(autoDownload.trim().toLowerCase());
