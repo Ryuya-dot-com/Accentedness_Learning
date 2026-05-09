@@ -38,7 +38,11 @@ Vocabulary_Platform/materials/Stimuli_24.xlsx
   - Picture Naming Task has two recorded practice trials with playback for microphone/volume checking.
   - L2-to-L1 Translation Task has two recorded practice trials with audio playback and recording playback for volume checking.
   - Picture Matching Task has four feedback practice trials with audio playback for volume checking.
+  - Recorded practice trials can be repeated with the `R` key after playback; all practice attempts are saved and excluded from analysis.
   - Practice rows are written to the CSV with `practice=1` and `exclude_from_analysis=1`.
+- Recording quality checks:
+  - WAV recordings include RMS amplitude, peak amplitude, clipping ratio, and a quality flag in the CSV.
+  - Recorded practice trials show a volume warning when the level is too low or clipping is detected.
 - Test audio policy:
   - Learning audio uses the assigned session accent only: `E`, `J`, or `C`.
   - Test audio uses separate test talker IDs, not the six learning talkers.
@@ -146,10 +150,11 @@ The platform downloads a ZIP containing:
 
 - `{participant}_results.csv`
 - `{participant}_assignment.json`
+- `recordings_manifest.csv`
 - `recordings/picture_naming/*.wav`
 - `recordings/l2_to_l1_translation/*.wav`
 - `recordings/practice/*.wav`
 
 By default, the result package is downloaded automatically at the end of each session. The download button remains available for manual re-download. Add `autodownload=0` to the URL to disable automatic download.
 
-The CSV includes participant ID, phase mode, assigned learning accent condition, variability condition, task name, practice/exclusion flags, test audio accent condition where applicable, talker, item, audio path, recording path, RT/correctness where applicable, and visual cue mode.
+The CSV includes participant ID, phase mode, assigned learning accent condition, variability condition, task name, practice/exclusion flags, test audio accent condition where applicable, talker, item, audio path, recording path, recording quality metrics, RT/correctness where applicable, and visual cue mode.

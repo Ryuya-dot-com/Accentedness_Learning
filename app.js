@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_vocab_exp2_v0.6.0";
+  const VERSION = "accented_vocab_exp2_v0.7.0";
   const FULL_EXPOSURES_PER_WORD = 6;
   const LEARNING_ITI_MS = 650;
   const VISUAL_TO_AUDIO_MS = 750;
@@ -11,6 +11,9 @@
   const PHASE_MODES = ["learning", "tests", "full"];
   const TEST_ACCENT_IDS = ["english", "japanese", "chinese"];
   const CHECKPOINT_PREFIX = "vocabulary_task_checkpoint:";
+  const MIN_RECORDING_RMS = 0.008;
+  const CLIPPING_AMPLITUDE = 0.98;
+  const MAX_CLIPPING_RATIO = 0.01;
   const TASK_TITLES = {
     pictureNaming: "Picture Naming Task",
     l2ToL1: "L2-to-L1 Translation Task",
@@ -176,10 +179,11 @@
       .slice(0, 80) || "item";
   }
 
-  function recordingFileName(assignment, taskSlug, trialNumber, item, practice = false) {
+  function recordingFileName(assignment, taskSlug, trialNumber, item, practice = false, attempt = 1) {
     const prefix = practice ? "practice_" : "";
     const trialText = String(trialNumber).padStart(3, "0");
-    return `${prefix}${safeFilePart(assignment.participantId)}_${taskSlug}_${trialText}_${safeFilePart(item.word)}.wav`;
+    const attemptText = practice ? `_attempt${attempt}` : "";
+    return `${prefix}${safeFilePart(assignment.participantId)}_${taskSlug}_${trialText}_${safeFilePart(item.word)}${attemptText}.wav`;
   }
 
   function isChromeBrowser() {
@@ -200,6 +204,36 @@
     setStatus("Google Chromeで開いてください。");
     setLog("この課題では音声再生とWAV録音を安定させるため、Google Chromeを使用してください。");
     return false;
+  }
+
+  function recordingQuality(recording) {
+    const rms = Number(recording.rms_amplitude || 0);
+    const clippingRatio = Number(recording.clipping_ratio || 0);
+    if (rms < MIN_RECORDING_RMS) return "low_level";
+    if (clippingRatio > MAX_CLIPPING_RATIO) return "clipping";
+    return "ok";
+  }
+
+  function recordingQualityMessage(recording) {
+    const status = recordingQuality(recording);
+    if (status === "low_level") {
+      return "録音音量が小さい可能性があります。マイク位置を確認してください。";
+    }
+    if (status === "clipping") {
+      return "音が大きすぎる可能性があります。マイクから少し離れてください。";
+    }
+    return "録音音量は確認できています。";
+  }
+
+  function recordingFields(recording) {
+    return {
+      recording_duration_ms: recording.duration_ms.toFixed(1),
+      recording_sample_rate_hz: recording.sample_rate_hz,
+      recording_rms_amplitude: recording.rms_amplitude.toFixed(6),
+      recording_peak_amplitude: recording.peak_amplitude.toFixed(6),
+      recording_clipping_ratio: recording.clipping_ratio.toFixed(6),
+      recording_quality: recordingQuality(recording),
+    };
   }
 
   function csvCell(value) {
@@ -404,6 +438,25 @@
           resolve({ key: "", rt_ms: null, timeout: true });
         }, timeoutMs);
       }
+    });
+  }
+
+  function waitForPracticeDecision(promptText) {
+    showMessage(promptText);
+    return new Promise((resolve) => {
+      const handler = (ev) => {
+        const key = ev.key.toLowerCase();
+        if (ev.code === "Space") {
+          ev.preventDefault();
+          document.removeEventListener("keydown", handler);
+          resolve("next");
+        } else if (key === "r") {
+          ev.preventDefault();
+          document.removeEventListener("keydown", handler);
+          resolve("retry");
+        }
+      };
+      document.addEventListener("keydown", handler);
     });
   }
 
@@ -770,6 +823,27 @@
     return new Blob([view], { type: "audio/wav" });
   }
 
+  function analyzeAudioBuffers(buffers) {
+    let samples = 0;
+    let sumSquares = 0;
+    let peak = 0;
+    let clipped = 0;
+    buffers.forEach((buffer) => {
+      for (let i = 0; i < buffer.length; i += 1) {
+        const abs = Math.abs(buffer[i]);
+        samples += 1;
+        sumSquares += buffer[i] * buffer[i];
+        if (abs > peak) peak = abs;
+        if (abs >= CLIPPING_AMPLITUDE) clipped += 1;
+      }
+    });
+    return {
+      rms_amplitude: samples ? Math.sqrt(sumSquares / samples) : 0,
+      peak_amplitude: peak,
+      clipping_ratio: samples ? clipped / samples : 0,
+    };
+  }
+
   function writeString(view, offset, text) {
     for (let i = 0; i < text.length; i += 1) {
       view.setUint8(offset + i, text.charCodeAt(i));
@@ -794,6 +868,7 @@
     await delay(durationMs);
     const endedAt = performance.now();
     const sampleRate = audioContext.sampleRate;
+    const metrics = analyzeAudioBuffers(buffers);
     const blob = encodeWav(buffers, sampleRate);
     processor.disconnect();
     source.disconnect();
@@ -805,6 +880,7 @@
       endedAt,
       duration_ms: endedAt - startedAt,
       sample_rate_hz: sampleRate,
+      ...metrics,
     };
   }
 
@@ -848,11 +924,17 @@
     return true;
   }
 
-  async function replayPracticeRecording(recording) {
+  async function reviewPracticeRecording(recording, extraText = "") {
     showMessage("録音を再生します。\n音量と聞こえ方を確認してください。");
     await delay(500);
     await playBlob(recording.blob);
-    await waitForSpace("録音を確認してください。\n聞こえ方に問題がある場合は担当者に知らせてください。\n問題がなければスペースキーで続行");
+    const details = [
+      recordingQualityMessage(recording),
+      extraText,
+      "もう一度練習する場合は R キーを押してください。",
+      "次へ進む場合はスペースキーを押してください。",
+    ].filter(Boolean).join("\n");
+    return waitForPracticeDecision(details);
   }
 
   async function runPictureNamingPractice(assignment, assets, rows, recordings) {
@@ -863,32 +945,40 @@
     const total = assignment.pictureNamingPracticeTrials.length;
     for (let i = 0; i < total; i += 1) {
       const trial = assignment.pictureNamingPracticeTrials[i];
-      updateProgress(`${TASK_TITLES.pictureNaming} 練習`, i + 1, total);
-      const visualMode = showVisual(trial.item, assets.imageMap, "練習");
-      els.responseHint.textContent = "英単語を声に出してください";
-      const recording = await recordWav(PRACTICE_RECORD_MS);
-      const fileName = recordingFileName(assignment, "picture_naming", i + 1, trial.item, true);
-      recordings.push({ fileName: `practice/${fileName}`, blob: recording.blob });
-      rows.push(baseRow(assignment, {
-        phase: "picture_naming",
-        task_name: TASK_TITLES.pictureNaming,
-        practice: 1,
-        exclude_from_analysis: 1,
-        trial: i + 1,
-        word: trial.item.word,
-        item_id: trial.item.id,
-        expected_response: trial.item.word,
-        expected_l1: trial.item.ja,
-        visual_mode: visualMode,
-        recording_file: `recordings/practice/${fileName}`,
-        recording_duration_ms: recording.duration_ms.toFixed(1),
-        recording_sample_rate_hz: recording.sample_rate_hz,
-      }));
-      saveCheckpoint(assignment, rows);
-      await replayPracticeRecording(recording);
-      showFixation();
-      await delay(LEARNING_ITI_MS);
-      if (interruptRequested) return false;
+      let attempt = 1;
+      while (true) {
+        updateProgress(`${TASK_TITLES.pictureNaming} 練習`, i + 1, total);
+        const visualMode = showVisual(trial.item, assets.imageMap, "練習");
+        els.responseHint.textContent = "録音中";
+        const recording = await recordWav(PRACTICE_RECORD_MS);
+        const fileName = recordingFileName(assignment, "picture_naming", i + 1, trial.item, true, attempt);
+        recordings.push({ fileName: `practice/${fileName}`, blob: recording.blob });
+        rows.push(baseRow(assignment, {
+          phase: "picture_naming",
+          task_name: TASK_TITLES.pictureNaming,
+          practice: 1,
+          practice_attempt: attempt,
+          exclude_from_analysis: 1,
+          trial: i + 1,
+          word: trial.item.word,
+          item_id: trial.item.id,
+          expected_response: trial.item.word,
+          expected_l1: trial.item.ja,
+          visual_mode: visualMode,
+          recording_file: `recordings/practice/${fileName}`,
+          ...recordingFields(recording),
+        }));
+        saveCheckpoint(assignment, rows);
+        const decision = await reviewPracticeRecording(recording);
+        if (interruptRequested) return false;
+        if (decision === "retry") {
+          attempt += 1;
+          continue;
+        }
+        showFixation();
+        await delay(LEARNING_ITI_MS);
+        break;
+      }
     }
     return true;
   }
@@ -920,8 +1010,7 @@
         expected_l1: trial.item.ja,
         visual_mode: visualMode,
         recording_file: `recordings/picture_naming/${fileName}`,
-        recording_duration_ms: recording.duration_ms.toFixed(1),
-        recording_sample_rate_hz: recording.sample_rate_hz,
+        ...recordingFields(recording),
       }));
       saveCheckpoint(assignment, rows);
       showFixation();
@@ -949,40 +1038,47 @@
     const total = assignment.l2ToL1PracticeTrials.length;
     for (let i = 0; i < total; i += 1) {
       const trial = assignment.l2ToL1PracticeTrials[i];
-      updateProgress(`${TASK_TITLES.l2ToL1} 練習`, i + 1, total);
-      showSoundCue("音声");
-      els.responseHint.textContent = "音声を聞いたら日本語訳を声に出してください";
-      const audioAccent = audioAccentForTrial(assignment, trial);
-      const path = trialAudioPath(assignment, trial, trial.item);
-      const trialStart = performance.now();
-      const { recording, audioOnset } = await recordSpokenTranslation(assets, path, PRACTICE_RECORD_MS);
-      const fileName = recordingFileName(assignment, "l2_to_l1_translation", i + 1, trial.item, true);
-      recordings.push({ fileName: `practice/${fileName}`, blob: recording.blob });
-      rows.push(baseRow(assignment, {
-        phase: "l2_to_l1_translation",
-        task_name: TASK_TITLES.l2ToL1,
-        practice: 1,
-        exclude_from_analysis: 1,
-        trial: i + 1,
-        word: trial.item.word,
-        item_id: trial.item.id,
-        expected_response: trial.item.ja,
-        expected_l1: trial.item.ja,
-        audio_accent_condition: audioAccent.id,
-        audio_accent_code: sessionCodeForAccent(audioAccent.id),
-        talker: trial.talker,
-        audio_file: path,
-        audio_onset_ms: (audioOnset - trialStart).toFixed(1),
-        recording_file: `recordings/practice/${fileName}`,
-        recording_duration_ms: recording.duration_ms.toFixed(1),
-        recording_sample_rate_hz: recording.sample_rate_hz,
-      }));
-      saveCheckpoint(assignment, rows);
-      await replayPracticeRecording(recording);
-      await waitForSpace(`練習の正答: ${trial.item.ja}\nスペースキーで続行`);
-      showFixation();
-      await delay(LEARNING_ITI_MS);
-      if (interruptRequested) return false;
+      let attempt = 1;
+      while (true) {
+        updateProgress(`${TASK_TITLES.l2ToL1} 練習`, i + 1, total);
+        showSoundCue("音声");
+        els.responseHint.textContent = "録音中。音声を聞いたら日本語訳を声に出してください";
+        const audioAccent = audioAccentForTrial(assignment, trial);
+        const path = trialAudioPath(assignment, trial, trial.item);
+        const trialStart = performance.now();
+        const { recording, audioOnset } = await recordSpokenTranslation(assets, path, PRACTICE_RECORD_MS);
+        const fileName = recordingFileName(assignment, "l2_to_l1_translation", i + 1, trial.item, true, attempt);
+        recordings.push({ fileName: `practice/${fileName}`, blob: recording.blob });
+        rows.push(baseRow(assignment, {
+          phase: "l2_to_l1_translation",
+          task_name: TASK_TITLES.l2ToL1,
+          practice: 1,
+          practice_attempt: attempt,
+          exclude_from_analysis: 1,
+          trial: i + 1,
+          word: trial.item.word,
+          item_id: trial.item.id,
+          expected_response: trial.item.ja,
+          expected_l1: trial.item.ja,
+          audio_accent_condition: audioAccent.id,
+          audio_accent_code: sessionCodeForAccent(audioAccent.id),
+          talker: trial.talker,
+          audio_file: path,
+          audio_onset_ms: (audioOnset - trialStart).toFixed(1),
+          recording_file: `recordings/practice/${fileName}`,
+          ...recordingFields(recording),
+        }));
+        saveCheckpoint(assignment, rows);
+        const decision = await reviewPracticeRecording(recording, `練習の正答: ${trial.item.ja}`);
+        if (interruptRequested) return false;
+        if (decision === "retry") {
+          attempt += 1;
+          continue;
+        }
+        showFixation();
+        await delay(LEARNING_ITI_MS);
+        break;
+      }
     }
     return true;
   }
@@ -997,7 +1093,7 @@
       const trial = assignment.l2ToL1Trials[i];
       updateProgress(TASK_TITLES.l2ToL1, i + 1, total);
       showSoundCue("音声");
-      els.responseHint.textContent = "音声を聞いたら日本語訳を声に出してください";
+      els.responseHint.textContent = "録音中。音声を聞いたら日本語訳を声に出してください";
       const audioAccent = audioAccentForTrial(assignment, trial);
       const path = trialAudioPath(assignment, trial, trial.item);
       const trialStart = performance.now();
@@ -1021,8 +1117,7 @@
         audio_file: path,
         audio_onset_ms: (audioOnset - trialStart).toFixed(1),
         recording_file: `recordings/l2_to_l1_translation/${fileName}`,
-        recording_duration_ms: recording.duration_ms.toFixed(1),
-        recording_sample_rate_hz: recording.sample_rate_hz,
+        ...recordingFields(recording),
       }));
       saveCheckpoint(assignment, rows);
       showFixation();
@@ -1121,6 +1216,8 @@
         visual_mode: visualMode,
       }));
       saveCheckpoint(assignment, rows);
+      els.responseHint.textContent = "回答を受け付けました";
+      await delay(150);
       showFixation();
       await delay(LEARNING_ITI_MS);
       if (interruptRequested) return false;
@@ -1145,6 +1242,35 @@
     };
   }
 
+  function recordingManifestRows(rows) {
+    return rows
+      .filter((row) => row.recording_file)
+      .map((row) => ({
+        recording_file: row.recording_file,
+        participant_id: row.participant_id,
+        task_name: row.task_name,
+        phase: row.phase,
+        practice: row.practice,
+        practice_attempt: row.practice_attempt,
+        exclude_from_analysis: row.exclude_from_analysis,
+        trial: row.trial,
+        condition: row.condition,
+        word: row.word,
+        expected_response: row.expected_response,
+        expected_l1: row.expected_l1,
+        audio_accent_condition: row.audio_accent_condition,
+        audio_accent_code: row.audio_accent_code,
+        talker: row.talker,
+        audio_file: row.audio_file,
+        recording_duration_ms: row.recording_duration_ms,
+        recording_sample_rate_hz: row.recording_sample_rate_hz,
+        recording_rms_amplitude: row.recording_rms_amplitude,
+        recording_peak_amplitude: row.recording_peak_amplitude,
+        recording_clipping_ratio: row.recording_clipping_ratio,
+        recording_quality: row.recording_quality,
+      }));
+  }
+
   async function buildResultPackage(assignment, rows, recordings) {
     if (!window.JSZip) {
       if (recordings.length) {
@@ -1158,6 +1284,7 @@
     }
     const zip = new JSZip();
     zip.file(`${assignment.participantId}_results.csv`, toCsv(rows));
+    zip.file("recordings_manifest.csv", toCsv(recordingManifestRows(rows)));
     zip.file(`${assignment.participantId}_assignment.json`, JSON.stringify({
       version: assignment.version,
       participant_id: assignment.participantId,
