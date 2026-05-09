@@ -57,6 +57,7 @@ The learning phase has 144 trials: 24 words x 6 presentations. Breaks are insert
 ## Separate Learning and Test URLs
 
 The app is static and GitHub Pages friendly. Use the same participant ID and session code for both sessions.
+The default `index.html` view runs the full task unless a `phase` query parameter is supplied.
 
 ```text
 Vocabulary_Platform/learning.html?code=E&participant=001
