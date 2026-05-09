@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_learning_v0.8.0";
+  const VERSION = "accented_learning_v0.8.1";
   const FULL_EXPOSURES_PER_WORD = 6;
   const LEARNING_ITI_MS = 650;
   const VISUAL_TO_AUDIO_MS = 750;
@@ -116,9 +116,19 @@
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  function hashParticipantId(participantId) {
+    const text = String(participantId || "").trim();
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0) || 1;
+  }
+
   function parseNumericId(participantId) {
     const digits = String(participantId).match(/\d+/g);
-    return digits ? parseInt(digits.join(""), 10) : 1;
+    return digits ? parseInt(digits.join(""), 10) : hashParticipantId(participantId);
   }
 
   function mulberry32(seed) {
@@ -317,7 +327,8 @@
     }
     const savedAt = checkpoint.saved_at ? new Date(checkpoint.saved_at).toLocaleString("ja-JP") : "";
     const rowCount = Array.isArray(checkpoint.rows) ? checkpoint.rows.length : 0;
-    els.recoverySummary.textContent = `参加者ID ${checkpoint.participant_id || "-"}、${rowCount}行、${savedAt}`;
+    const statusLabel = checkpoint.status === "complete_ready" ? "完了記録" : "途中記録";
+    els.recoverySummary.textContent = `${statusLabel}: 参加者ID ${checkpoint.participant_id || "-"}、${rowCount}行、${savedAt}`;
     els.recoveryCard.classList.remove("hidden");
   }
 
@@ -333,15 +344,17 @@
       : new Blob([JSON.stringify(checkpoint, null, 2)], { type: "application/json;charset=utf-8" });
     const extension = rows.length ? "csv" : "json";
     const participantId = checkpoint.participant_id || "participant";
+    const sessionCode = checkpoint.session_code || "";
     const phaseMode = checkpoint.phase_mode || "session";
+    const resultKind = checkpoint.status === "complete_ready" ? "recovery" : "partial";
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `${participantId}_${phaseMode}_vocabulary_task_partial.${extension}`;
+    a.download = [participantId, sessionCode, phaseMode, "vocabulary_task", resultKind].filter(Boolean).join("_") + `.${extension}`;
     document.body.appendChild(a);
     a.click();
     URL.revokeObjectURL(a.href);
     a.remove();
-    setStatus("途中の記録を保存しました。");
+    setStatus(checkpoint.status === "complete_ready" ? "完了記録を保存しました。" : "途中の記録を保存しました。");
   }
 
   function clearLatestCheckpoint() {
@@ -696,6 +709,12 @@
     }
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     return micStream;
+  }
+
+  function stopMicStream() {
+    if (!micStream) return;
+    micStream.getTracks().forEach((track) => track.stop());
+    micStream = null;
   }
 
   function encodeWav(buffers, sampleRate) {
@@ -1374,6 +1393,7 @@
       downloadBlobUrl = URL.createObjectURL(resultPackage.blob);
       lastDownloadMeta = {
         participantId: assignment.participantId,
+        sessionCode: sessionCodeForAccent(assignment.accent.id),
         phaseMode: assignment.phaseMode,
         extension: resultPackage.extension,
         label: resultPackage.label,
@@ -1381,7 +1401,7 @@
       };
       els.downloadBtn.disabled = false;
       els.prepareBtn.disabled = false;
-      clearCheckpoint(assignment);
+      saveCheckpoint(assignment, rows, "complete_ready");
       if (els.autoDownload.checked) {
         downloadResults();
         setStatus(`完了。${resultPackage.label}を保存しました。必要なら再保存できます。`);
@@ -1396,6 +1416,7 @@
     } finally {
       document.body.classList.remove("running");
       els.interruptBtn.disabled = true;
+      stopMicStream();
       activeRun = null;
       interruptRequested = false;
       prepared = null;
@@ -1408,12 +1429,13 @@
       return;
     }
     const participantId = lastDownloadMeta?.participantId || els.participantId.value.trim() || "participant";
+    const sessionCode = lastDownloadMeta?.sessionCode || "";
     const phaseMode = lastDownloadMeta?.phaseMode || els.phaseMode.value || "session";
     const extension = lastDownloadMeta?.extension || "zip";
     const resultKind = lastDownloadMeta?.status === "partial" ? "partial" : "results";
     const a = document.createElement("a");
     a.href = downloadBlobUrl;
-    a.download = `${participantId}_${phaseMode}_vocabulary_task_${resultKind}.${extension}`;
+    a.download = [participantId, sessionCode, phaseMode, "vocabulary_task", resultKind].filter(Boolean).join("_") + `.${extension}`;
     document.body.appendChild(a);
     a.click();
     a.remove();

@@ -29,6 +29,8 @@ The visible session codes are:
 - `J`: Japanese condition
 - `C`: Chinese condition
 
+Use anonymized participant IDs only. Numeric IDs are recommended for transparent counterbalancing; alphanumeric IDs are also accepted and are assigned by a stable hash when they contain no digits.
+
 The page also supports:
 
 ```text
