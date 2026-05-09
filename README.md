@@ -30,10 +30,16 @@ Vocabulary_Platform/materials/Stimuli_24.xlsx
   - L2-to-L1 typed translation.
   - Production recall with WAV recording.
   - Picture matching with `F` = mismatch and `J` = match.
+- Test audio policy:
+  - Learning audio uses the assigned session accent only: `E`, `J`, or `C`.
+  - Test audio uses separate test talker IDs, not the six learning talkers.
+  - L2-to-L1 has 24 trials, with 8 English-accent, 8 Japanese-accent, and 8 Chinese-accent test audio trials per participant.
+  - Picture matching has 48 trials, with 16 English-accent, 16 Japanese-accent, and 16 Chinese-accent test audio trials per participant.
+  - Test accent assignment is seeded by participant ID, so individual trial order varies while the accent counts remain balanced.
 
 The original Experiment 2 used no-, moderate-, and high-variability conditions. This implementation follows the current requested two-level comparison: Single vs Multiple.
 
-The learning phase has 144 trials: 24 words x 6 presentations.
+The learning phase has 144 trials: 24 words x 6 presentations. Breaks are inserted every 24 learning trials, i.e., after each full Single/Multiple exposure cycle.
 
 ## Separate Learning and Test URLs
 
@@ -79,6 +85,14 @@ Vocabulary_Platform/audio/chinese/c1/{word}.wav
 Vocabulary_Platform/audio/chinese/c6/{word}.wav
 ```
 
+Test-only placeholder talkers are stored alongside the learning talkers:
+
+```text
+Vocabulary_Platform/audio/english/e_test/{word}.wav
+Vocabulary_Platform/audio/japanese/j_test/{word}.wav
+Vocabulary_Platform/audio/chinese/c_test/{word}.wav
+```
+
 The app refuses to start when required audio files are missing. This is intentional so missing assets do not silently enter the experiment.
 
 Temporary placeholder audio can be created from the existing English six-voice TTS files:
@@ -88,7 +102,7 @@ cd /Users/ryuya/Library/CloudStorage/Dropbox/Accentedness/Experiment/Vocabulary_
 bash scripts/create_placeholder_audio.sh
 ```
 
-These placeholder files are copied English TTS audio. They are for UI and timing development only. Replace them with the final Japanese-, English-, and Chinese-accent stimuli before collecting data.
+These placeholder files are copied English TTS audio. They are for UI and timing development only. Replace them with the final Japanese-, English-, and Chinese-accent learning stimuli and the final test-only talker stimuli before collecting data.
 
 ## Image Layout
 
@@ -125,4 +139,4 @@ The platform downloads a ZIP containing:
 
 By default, the result package is downloaded automatically at the end of each session. The download button remains available for manual re-download. Add `autodownload=0` to the URL to disable automatic download.
 
-The CSV includes participant ID, phase mode, accent condition, variability condition, talker, item, audio path, response, RT, correctness where applicable, and visual cue mode.
+The CSV includes participant ID, phase mode, assigned learning accent condition, variability condition, test audio accent condition where applicable, talker, item, audio path, response, RT, correctness where applicable, and visual cue mode.
