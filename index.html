@@ -3,64 +3,68 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Accent Variability Vocabulary Platform</title>
+    <title>Vocabulary Learning Task</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main id="app">
       <section id="setup-panel" class="panel">
-        <h1>Accent Variability Vocabulary Platform</h1>
-        <div class="grid">
-          <label>
-            参加者ID
-            <input id="participant-id" type="text" autocomplete="off" placeholder="例: 001" />
-          </label>
-          <label>
-            アクセント条件
-            <select id="accent-condition">
-              <option value="">J / E / C を選択</option>
-              <option value="japanese">J: Japanese-accent stimuli</option>
-              <option value="english">E: English-accent stimuli</option>
-              <option value="chinese">C: Chinese-accent stimuli</option>
-            </select>
-          </label>
-          <label>
-            セッション
-            <select id="phase-mode">
-              <option value="learning">Learning only</option>
-              <option value="tests">Tests only</option>
-              <option value="full">Full local pilot</option>
-            </select>
-          </label>
-          <label>
-            実行モード
-            <select id="run-mode">
-              <option value="full">Full experiment</option>
-              <option value="demo">Demo / smoke test</option>
-            </select>
-          </label>
-          <label class="checkbox-row">
-            <input id="auto-download" type="checkbox" checked />
-            <span>終了時に結果ファイルを自動ダウンロード</span>
-          </label>
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Vocabulary Session</p>
+            <h1>語彙学習タスク</h1>
+            <p class="lead">担当者から案内されたコードを入力し、画面の指示に従って進めてください。</p>
+          </div>
+          <div class="session-badge">準備前</div>
         </div>
+
+        <section class="setup-section">
+          <h2>参加情報</h2>
+          <div class="grid primary-grid">
+            <label>
+              参加者ID
+              <input id="participant-id" type="text" autocomplete="off" placeholder="例: 001" />
+            </label>
+            <label>
+              セッションコード
+              <input id="accent-condition" type="text" autocomplete="off" placeholder="担当者指定のコード" />
+            </label>
+          </div>
+        </section>
+
+        <details class="advanced-settings">
+          <summary>詳細設定</summary>
+          <div class="grid">
+            <label>
+              セッション
+              <select id="phase-mode">
+                <option value="learning">パート1</option>
+                <option value="tests">パート2</option>
+                <option value="full">通し実施</option>
+              </select>
+            </label>
+            <label>
+              実施形式
+              <select id="run-mode">
+                <option value="full">標準</option>
+                <option value="demo">短縮確認</option>
+              </select>
+            </label>
+            <label class="checkbox-row">
+              <input id="auto-download" type="checkbox" checked />
+              <span>終了時にセッションファイルを保存する</span>
+            </label>
+          </div>
+        </details>
+
         <div class="summary">
-          <p>
-            Single / Multiple は参加者内、アクセント種別は参加者間で扱います。
-            仮選定した24語を12語ずつの2リストに分け、各語の学習提示回数は6回で揃えます。
-          </p>
-          <p>
-            GitHub Pages 公開時は <code>?phase=learning</code> と <code>?phase=tests</code> を分けて使えます。
-          </p>
-          <p>
-            画像ファイルがない語は、暫定的に日本語グロスを視覚手がかりとして表示します。
-            本番運用では <code>Vocabulary_Platform/images/</code> に語ごとの画像を追加してください。
-          </p>
+          <p>開始後は、音声を聞く課題、入力する課題、発話する課題が順番に表示されます。</p>
+          <p>途中でブラウザを閉じず、担当者の指示があるまで同じ画面で続けてください。</p>
         </div>
         <div class="actions">
-          <button id="prepare-btn">準備</button>
-          <button id="start-btn" disabled>開始</button>
-          <button id="download-btn" class="success" disabled>結果を再ダウンロード</button>
+          <button id="prepare-btn">準備する</button>
+          <button id="start-btn" disabled>開始する</button>
+          <button id="download-btn" class="success" disabled>ファイルを保存</button>
         </div>
       </section>
 

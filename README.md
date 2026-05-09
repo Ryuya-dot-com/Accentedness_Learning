@@ -1,6 +1,6 @@
-# Accent Variability Vocabulary Platform
+# Vocabulary Learning Task
 
-This folder is a static browser prototype for reproducing the talker-variability logic of Barcroft & Sommers Experiment 2 with the current Accentedness stimuli.
+This folder is a static browser prototype for reproducing the talker-variability logic of Barcroft & Sommers Experiment 2 with the current Accentedness stimuli. The participant-facing UI intentionally uses neutral labels so the assignment logic is not visible during the task.
 
 The current platform uses a provisional 24-word subset selected from the original 50-word spreadsheet. The source list is stored at:
 
@@ -37,21 +37,21 @@ In full mode, the learning phase has 144 trials: 24 words x 6 presentations.
 
 ## Separate Learning and Test URLs
 
-The app is static and GitHub Pages friendly. Use the same participant ID and accent condition for both sessions.
+The app is static and GitHub Pages friendly. Use the same participant ID and session code for both sessions.
 
 ```text
-Vocabulary_Platform/learning.html?accent=J&participant=001
-Vocabulary_Platform/tests.html?accent=J&participant=001
+Vocabulary_Platform/learning.html?code=A&participant=001
+Vocabulary_Platform/tests.html?code=A&participant=001
 ```
 
 Equivalent query parameters also work on `index.html`:
 
 ```text
-Vocabulary_Platform/?phase=learning&accent=J&participant=001
-Vocabulary_Platform/?phase=tests&accent=J&participant=001
+Vocabulary_Platform/?phase=learning&code=A&participant=001
+Vocabulary_Platform/?phase=tests&code=A&participant=001
 ```
 
-Use `mode=demo` for a short smoke test and `mode=full` for the full schedule.
+Use `mode=demo` for a short smoke test and `mode=full` for the full schedule. The neutral public codes are `A`, `B`, and `C`; legacy `accent=J`, `accent=E`, and `accent=C` links still work for researcher-side compatibility but should not be distributed to participants.
 
 ## Audio Layout
 

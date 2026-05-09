@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_vocab_exp2_v0.2.0";
+  const VERSION = "accented_vocab_exp2_v0.3.0";
   const FULL_EXPOSURES_PER_WORD = 6;
   const DEMO_EXPOSURES_PER_WORD = 2;
   const LEARNING_ITI_MS = 650;
@@ -9,30 +9,49 @@
   const RESPONSE_KEYS = { no: "f", yes: "j" };
   const PHASE_MODES = ["learning", "tests", "full"];
   const ACCENT_ALIASES = {
+    a: "japanese",
+    "code-a": "japanese",
+    groupa: "japanese",
+    "group-a": "japanese",
     j: "japanese",
     japanese: "japanese",
+    b: "english",
+    "code-b": "english",
+    groupb: "english",
+    "group-b": "english",
     e: "english",
     english: "english",
+    "code-c": "chinese",
+    groupc: "chinese",
+    "group-c": "chinese",
     c: "chinese",
     chinese: "chinese",
   };
 
+  const DISPLAY_CODES = {
+    japanese: "A",
+    english: "B",
+    chinese: "C",
+  };
+
+  const DEBUG_MODE = new URLSearchParams(window.location.search).get("debug") === "1";
+
   const ACCENT_SETS = {
     japanese: {
       id: "japanese",
-      label: "Japanese-accent stimuli",
+      label: "Set A",
       basePath: "audio/japanese",
       talkers: ["j1", "j2", "j3", "j4", "j5", "j6"],
     },
     english: {
       id: "english",
-      label: "English-accent stimuli",
+      label: "Set B",
       basePath: "audio/english",
       talkers: ["e1", "e2", "e3", "e4", "e5", "e6"],
     },
     chinese: {
       id: "chinese",
-      label: "Chinese-accent stimuli",
+      label: "Set C",
       basePath: "audio/chinese",
       talkers: ["c1", "c2", "c3", "c4", "c5", "c6"],
     },
@@ -42,6 +61,7 @@
   const els = {
     participantId: document.getElementById("participant-id"),
     accentCondition: document.getElementById("accent-condition"),
+    sessionBadge: document.querySelector(".session-badge"),
     phaseMode: document.getElementById("phase-mode"),
     runMode: document.getElementById("run-mode"),
     autoDownload: document.getElementById("auto-download"),
@@ -70,6 +90,9 @@
 
   function setStatus(text) {
     els.status.textContent = text;
+    if (els.sessionBadge && text) {
+      els.sessionBadge.textContent = text.split("。")[0].slice(0, 16);
+    }
   }
 
   function setLog(text) {
@@ -172,7 +195,8 @@
       return "image";
     }
     els.visualLabel.textContent = item.ja || item.word;
-    els.visualNote.textContent = note || "Image asset missing; showing gloss placeholder.";
+    els.visualNote.textContent = note || "";
+    els.visualNote.style.display = note ? "block" : "none";
     els.visualCard.style.display = "flex";
     return "gloss_placeholder";
   }
@@ -526,14 +550,14 @@
 
   async function runLearning(assignment, assets, rows) {
     await waitForSpace(
-      `Learning phase\n\n音声を聞き、表示された概念と英単語の対応を覚えてください。\nスペースキーで開始`
+      `パート1\n\n音声を聞き、表示された意味と英単語の対応を覚えてください。\n準備ができたらスペースキーを押してください。`
     );
     const total = assignment.learningTrials.length;
     const start = performance.now();
     for (let i = 0; i < total; i += 1) {
       const trial = assignment.learningTrials[i];
-      updateProgress("Learning", i + 1, total);
-      const visualMode = showVisual(trial.item, assets.imageMap, "Learning cue");
+      updateProgress("パート1", i + 1, total);
+      const visualMode = showVisual(trial.item, assets.imageMap, "");
       await delay(VISUAL_TO_AUDIO_MS);
       const path = audioPath(assignment.accent, trial.talker, trial.item);
       const audioOnsetMs = performance.now() - start;
@@ -561,12 +585,12 @@
 
   async function runL2ToL1(assignment, assets, rows) {
     await waitForSpace(
-      `L2 to L1 test\n\n音声を聞いて、意味を日本語で入力してください。\n入力後 Enter キーで進みます。\nスペースキーで開始`
+      `パート2\n\n音声を聞いて、意味を日本語で入力してください。\n入力後 Enter キーで進みます。\n準備ができたらスペースキーを押してください。`
     );
     const total = assignment.l2ToL1Trials.length;
     for (let i = 0; i < total; i += 1) {
       const trial = assignment.l2ToL1Trials[i];
-      updateProgress("L2 to L1", i + 1, total);
+      updateProgress("パート2", i + 1, total);
       showSoundCue("音声");
       const path = audioPath(assignment.accent, trial.talker, trial.item);
       const onset = performance.now();
@@ -592,14 +616,14 @@
 
   async function runProduction(assignment, assets, rows, recordings) {
     await waitForSpace(
-      `Production test\n\n表示された概念の英単語を声に出してください。\n各試行は${(PRODUCTION_RECORD_MS / 1000).toFixed(0)}秒録音されます。\nスペースキーで開始`
+      `パート3\n\n表示された意味にあう英単語を声に出してください。\n各試行は${(PRODUCTION_RECORD_MS / 1000).toFixed(0)}秒録音されます。\n準備ができたらスペースキーを押してください。`
     );
     await ensureMicStream();
     const total = assignment.productionTrials.length;
     for (let i = 0; i < total; i += 1) {
       const trial = assignment.productionTrials[i];
-      updateProgress("Production", i + 1, total);
-      const visualMode = showVisual(trial.item, assets.imageMap, "Production cue");
+      updateProgress("パート3", i + 1, total);
+      const visualMode = showVisual(trial.item, assets.imageMap, "");
       els.responseHint.textContent = "録音中";
       const recording = await recordWav(PRODUCTION_RECORD_MS);
       const fileName = `${assignment.participantId}_production_${String(i + 1).padStart(3, "0")}_${trial.item.word}.wav`;
@@ -623,13 +647,13 @@
 
   async function runPictureMatching(assignment, assets, rows) {
     await waitForSpace(
-      `Picture matching test\n\n表示された概念と音声が一致するか判断してください。\nF = 不一致、J = 一致\nスペースキーで開始`
+      `パート4\n\n表示された意味と音声が一致するか判断してください。\nF = 不一致、J = 一致\n準備ができたらスペースキーを押してください。`
     );
     const total = assignment.matchingTrials.length;
     for (let i = 0; i < total; i += 1) {
       const trial = assignment.matchingTrials[i];
-      updateProgress("Picture matching", i + 1, total);
-      const visualMode = showVisual(trial.item, assets.imageMap, "Matching cue");
+      updateProgress("パート4", i + 1, total);
+      const visualMode = showVisual(trial.item, assets.imageMap, "");
       await delay(VISUAL_TO_AUDIO_MS);
       const path = audioPath(assignment.accent, trial.talker, trial.audioItem);
       const onset = performance.now();
@@ -719,7 +743,7 @@
     }
     const accentId = normalizeAccentId(els.accentCondition.value);
     if (!accentId) {
-      setStatus("アクセント条件を J / E / C から選択してください。");
+      setStatus("セッションコードを確認してください。");
       return;
     }
     const phaseMode = els.phaseMode.value;
@@ -731,33 +755,39 @@
     els.startBtn.disabled = true;
     els.downloadBtn.disabled = true;
     setLog("");
-    setStatus("条件割り当てを作成しています...");
+    setStatus("セッションを準備しています...");
     try {
       const assignment = buildAssignment(participantId, accentId, els.runMode.value, phaseMode);
       const assets = await preloadAssets(assignment);
       prepared = { assignment, assets };
       els.startBtn.disabled = false;
       setStatus("準備完了。開始できます。");
-      setLog([
-        `version: ${assignment.version}`,
-        `phase: ${assignment.phaseMode}`,
-        `counterbalance_cell: ${assignment.counterbalanceCell}/24`,
-        `accent: ${assignment.accent.label}`,
-        `single_list: ${assignment.singleList}`,
-        `multiple_list: ${assignment.multipleList}`,
-        `condition_order: ${assignment.conditionOrder.join(" > ")}`,
-        `single_talker: ${assignment.singleTalker}`,
-        `multi_talkers: ${assignment.multiTalkers.join(", ")}`,
-        `learning_trials: ${assignment.learningTrials.length}`,
-        `l2_to_l1_trials: ${assignment.l2ToL1Trials.length}`,
-        `production_trials: ${assignment.productionTrials.length}`,
-        `picture_matching_trials: ${assignment.matchingTrials.length}`,
-        `missing_images: ${assets.missingImages}`,
-      ].join("\n"));
+      if (DEBUG_MODE) {
+        setLog([
+          `version: ${assignment.version}`,
+          `phase: ${assignment.phaseMode}`,
+          `counterbalance_cell: ${assignment.counterbalanceCell}/24`,
+          `accent: ${assignment.accent.label}`,
+          `single_list: ${assignment.singleList}`,
+          `multiple_list: ${assignment.multipleList}`,
+          `condition_order: ${assignment.conditionOrder.join(" > ")}`,
+          `single_talker: ${assignment.singleTalker}`,
+          `multi_talkers: ${assignment.multiTalkers.join(", ")}`,
+          `learning_trials: ${assignment.learningTrials.length}`,
+          `l2_to_l1_trials: ${assignment.l2ToL1Trials.length}`,
+          `production_trials: ${assignment.productionTrials.length}`,
+          `picture_matching_trials: ${assignment.matchingTrials.length}`,
+          `missing_images: ${assets.missingImages}`,
+        ].join("\n"));
+      } else {
+        setLog("教材の読み込みが完了しました。担当者の合図で開始してください。");
+      }
     } catch (error) {
       prepared = null;
-      setStatus(`準備エラー: ${error.message}`);
-      setLog("音声ファイルが不足している場合は、READMEの命名規則に沿って仮音声または本番音声を追加してください。");
+      setStatus("準備エラー。担当者に知らせてください。");
+      setLog(DEBUG_MODE
+        ? (error.stack || String(error))
+        : "教材ファイルの読み込みを確認してください。");
     } finally {
       els.prepareBtn.disabled = false;
     }
@@ -785,9 +815,9 @@
         await runPictureMatching(assignment, assets, rows);
       }
       if (assignment.phaseMode === "learning") {
-        showMessage("学習セッションは終了しました。\n結果ファイルを作成しています。");
+        showMessage("このセッションは終了しました。\nファイルを作成しています。");
       } else {
-        showMessage("終了しました。\n結果ファイルを作成しています。");
+        showMessage("終了しました。\nファイルを作成しています。");
       }
       const resultPackage = await buildResultPackage(assignment, rows, recordings);
       if (downloadBlobUrl) URL.revokeObjectURL(downloadBlobUrl);
@@ -802,9 +832,9 @@
       els.prepareBtn.disabled = false;
       if (els.autoDownload.checked) {
         downloadResults();
-        setStatus(`完了。結果${resultPackage.label}を自動ダウンロードしました。必要なら再ダウンロードできます。`);
+        setStatus(`完了。${resultPackage.label}を保存しました。必要なら再保存できます。`);
       } else {
-        setStatus(`完了。結果${resultPackage.label}をダウンロードしてください。`);
+        setStatus(`完了。${resultPackage.label}を保存してください。`);
       }
       setLog(`rows: ${rows.length}\nrecordings: ${recordings.length}\nresult_file_type: ${resultPackage.extension}`);
     } catch (error) {
@@ -827,7 +857,7 @@
     const extension = lastDownloadMeta?.extension || "zip";
     const a = document.createElement("a");
     a.href = downloadBlobUrl;
-    a.download = `${participantId}_${phaseMode}_accent_variability_results.${extension}`;
+    a.download = `${participantId}_${phaseMode}_vocabulary_task_results.${extension}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -835,13 +865,13 @@
 
   function applyQueryDefaults() {
     const params = new URLSearchParams(window.location.search);
-    const accent = params.get("accent");
+    const accent = params.get("code") || params.get("group") || params.get("condition") || params.get("accent");
     const phase = params.get("phase");
     const mode = params.get("mode");
     const pid = params.get("participant") || params.get("pid");
     const autoDownload = params.get("autodownload");
     const accentId = normalizeAccentId(accent);
-    if (accentId) els.accentCondition.value = accentId;
+    if (accentId) els.accentCondition.value = DISPLAY_CODES[accentId] || accent;
     if (phase && PHASE_MODES.includes(phase)) els.phaseMode.value = phase;
     if (mode && ["full", "demo"].includes(mode)) els.runMode.value = mode;
     if (pid) els.participantId.value = pid;
@@ -859,5 +889,6 @@
   els.prepareBtn.addEventListener("click", prepare);
   els.startBtn.addEventListener("click", start);
   els.downloadBtn.addEventListener("click", downloadResults);
+  document.body.classList.toggle("debug", DEBUG_MODE);
   applyQueryDefaults();
 })();
