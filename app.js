@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_learning_v0.8.1";
+  const VERSION = "accented_learning_v0.8.2";
   const FULL_EXPOSURES_PER_WORD = 6;
   const LEARNING_ITI_MS = 650;
   const VISUAL_TO_AUDIO_MS = 750;
@@ -1202,7 +1202,7 @@
   async function buildResultPackage(assignment, rows, recordings) {
     if (!window.JSZip) {
       if (recordings.length) {
-        throw new Error("ZIPファイルを作成できません。ネットワーク接続を確認してから再読み込みしてください。");
+        throw new Error("ZIPファイルを作成できません。ページを再読み込みしてからもう一度保存してください。");
       }
       return {
         blob: new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" }),
