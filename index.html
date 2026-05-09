@@ -27,7 +27,12 @@
             </label>
             <label>
               セッションコード
-              <input id="accent-condition" type="text" autocomplete="off" placeholder="担当者指定のコード" />
+              <select id="accent-condition">
+                <option value="">選択してください</option>
+                <option value="A">コード A</option>
+                <option value="B">コード B</option>
+                <option value="C">コード C</option>
+              </select>
             </label>
           </div>
         </section>
@@ -61,6 +66,16 @@
           <p>開始後は、音声を聞く課題、入力する課題、発話する課題が順番に表示されます。</p>
           <p>途中でブラウザを閉じず、担当者の指示があるまで同じ画面で続けてください。</p>
         </div>
+        <div id="recovery-card" class="recovery-card hidden">
+          <div>
+            <strong>中断データがあります</strong>
+            <span id="recovery-summary"></span>
+          </div>
+          <div class="recovery-actions">
+            <button id="recovery-download-btn" type="button" class="secondary">中断データを保存</button>
+            <button id="recovery-clear-btn" type="button" class="secondary">消去</button>
+          </div>
+        </div>
         <div class="actions">
           <button id="prepare-btn">準備する</button>
           <button id="start-btn" disabled>開始する</button>
@@ -70,7 +85,10 @@
 
       <section id="task-panel" class="task-panel" aria-live="polite">
         <div id="progress">
-          <div id="progress-label"></div>
+          <div class="progress-top">
+            <div id="progress-label"></div>
+            <button id="interrupt-btn" type="button" class="secondary interrupt-btn" disabled>中断して保存</button>
+          </div>
           <div id="progress-track"><div id="progress-fill"></div></div>
         </div>
         <div id="stimulus-stage">

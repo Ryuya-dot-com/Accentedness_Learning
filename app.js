@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_vocab_exp2_v0.3.0";
+  const VERSION = "accented_vocab_exp2_v0.4.0";
   const FULL_EXPOSURES_PER_WORD = 6;
   const DEMO_EXPOSURES_PER_WORD = 2;
   const LEARNING_ITI_MS = 650;
@@ -8,6 +8,7 @@
   const PRODUCTION_RECORD_MS = 5000;
   const RESPONSE_KEYS = { no: "f", yes: "j" };
   const PHASE_MODES = ["learning", "tests", "full"];
+  const CHECKPOINT_PREFIX = "vocabulary_task_checkpoint:";
   const ACCENT_ALIASES = {
     a: "japanese",
     "code-a": "japanese",
@@ -68,6 +69,11 @@
     prepareBtn: document.getElementById("prepare-btn"),
     startBtn: document.getElementById("start-btn"),
     downloadBtn: document.getElementById("download-btn"),
+    interruptBtn: document.getElementById("interrupt-btn"),
+    recoveryCard: document.getElementById("recovery-card"),
+    recoverySummary: document.getElementById("recovery-summary"),
+    recoveryDownloadBtn: document.getElementById("recovery-download-btn"),
+    recoveryClearBtn: document.getElementById("recovery-clear-btn"),
     status: document.getElementById("status"),
     log: document.getElementById("log"),
     progressLabel: document.getElementById("progress-label"),
@@ -87,6 +93,8 @@
   let downloadBlobUrl = null;
   let lastDownloadMeta = null;
   let micStream = null;
+  let activeRun = null;
+  let interruptRequested = false;
 
   function setStatus(text) {
     els.status.textContent = text;
@@ -150,6 +158,106 @@
       keys.join(","),
       ...rows.map((row) => keys.map((key) => csvCell(row[key])).join(",")),
     ].join("\n");
+  }
+
+  function sessionCodeForAccent(accentId) {
+    return DISPLAY_CODES[accentId] || "";
+  }
+
+  function checkpointKey(assignment) {
+    return `${CHECKPOINT_PREFIX}${assignment.participantId}:${assignment.phaseMode}:${sessionCodeForAccent(assignment.accent.id)}`;
+  }
+
+  function saveCheckpoint(assignment, rows, status = "running") {
+    if (!assignment || !Array.isArray(rows)) return;
+    try {
+      const payload = {
+        version: assignment.version,
+        saved_at: new Date().toISOString(),
+        status,
+        participant_id: assignment.participantId,
+        session_code: sessionCodeForAccent(assignment.accent.id),
+        phase_mode: assignment.phaseMode,
+        mode: assignment.mode,
+        rows,
+      };
+      localStorage.setItem(checkpointKey(assignment), JSON.stringify(payload));
+      updateRecoveryCard();
+    } catch (error) {
+      if (DEBUG_MODE) setLog(`checkpoint_save_error: ${error.message}`);
+    }
+  }
+
+  function clearCheckpoint(assignment) {
+    try {
+      localStorage.removeItem(checkpointKey(assignment));
+      updateRecoveryCard();
+    } catch (error) {
+      if (DEBUG_MODE) setLog(`checkpoint_clear_error: ${error.message}`);
+    }
+  }
+
+  function checkpointList() {
+    const out = [];
+    try {
+      for (let i = 0; i < localStorage.length; i += 1) {
+        const key = localStorage.key(i);
+        if (!key || !key.startsWith(CHECKPOINT_PREFIX)) continue;
+        const item = JSON.parse(localStorage.getItem(key) || "{}");
+        out.push({ key, ...item });
+      }
+    } catch (error) {
+      if (DEBUG_MODE) setLog(`checkpoint_read_error: ${error.message}`);
+    }
+    return out.sort((a, b) => String(b.saved_at || "").localeCompare(String(a.saved_at || "")));
+  }
+
+  function latestCheckpoint() {
+    return checkpointList()[0] || null;
+  }
+
+  function updateRecoveryCard() {
+    if (!els.recoveryCard) return;
+    const checkpoint = latestCheckpoint();
+    if (!checkpoint) {
+      els.recoveryCard.classList.add("hidden");
+      return;
+    }
+    const savedAt = checkpoint.saved_at ? new Date(checkpoint.saved_at).toLocaleString("ja-JP") : "";
+    const rowCount = Array.isArray(checkpoint.rows) ? checkpoint.rows.length : 0;
+    els.recoverySummary.textContent = `参加者ID ${checkpoint.participant_id || "-"}、${rowCount}行、${savedAt}`;
+    els.recoveryCard.classList.remove("hidden");
+  }
+
+  function downloadCheckpoint() {
+    const checkpoint = latestCheckpoint();
+    if (!checkpoint) {
+      setStatus("保存できる中断データはありません。");
+      return;
+    }
+    const rows = Array.isArray(checkpoint.rows) ? checkpoint.rows : [];
+    const blob = rows.length
+      ? new Blob([toCsv(rows)], { type: "text/csv;charset=utf-8" })
+      : new Blob([JSON.stringify(checkpoint, null, 2)], { type: "application/json;charset=utf-8" });
+    const extension = rows.length ? "csv" : "json";
+    const participantId = checkpoint.participant_id || "participant";
+    const phaseMode = checkpoint.phase_mode || "session";
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `${participantId}_${phaseMode}_vocabulary_task_partial.${extension}`;
+    document.body.appendChild(a);
+    a.click();
+    URL.revokeObjectURL(a.href);
+    a.remove();
+    setStatus("中断データを保存しました。");
+  }
+
+  function clearLatestCheckpoint() {
+    const checkpoint = latestCheckpoint();
+    if (!checkpoint) return;
+    localStorage.removeItem(checkpoint.key);
+    updateRecoveryCard();
+    setStatus("中断データを消去しました。");
   }
 
   function updateProgress(label, done, total) {
@@ -575,12 +683,15 @@
         visual_mode: visualMode,
         audio_onset_ms: audioOnsetMs.toFixed(1),
       }));
+      saveCheckpoint(assignment, rows);
       showFixation();
       await delay(LEARNING_ITI_MS);
+      if (interruptRequested) return false;
       if ((i + 1) < total && (i + 1) % BREAK_EVERY_TRIALS === 0) {
         await waitForSpace(`休憩\n\n${i + 1}/${total} 試行が終わりました。\nスペースキーで続行`);
       }
     }
+    return true;
   }
 
   async function runL2ToL1(assignment, assets, rows) {
@@ -609,9 +720,12 @@
         typed_response: response.response,
         rt_ms: response.rt_ms.toFixed(1),
       }));
+      saveCheckpoint(assignment, rows);
       showFixation();
       await delay(LEARNING_ITI_MS);
+      if (interruptRequested) return false;
     }
+    return true;
   }
 
   async function runProduction(assignment, assets, rows, recordings) {
@@ -640,9 +754,12 @@
         recording_duration_ms: recording.duration_ms.toFixed(1),
         recording_sample_rate_hz: recording.sample_rate_hz,
       }));
+      saveCheckpoint(assignment, rows);
       showFixation();
       await delay(LEARNING_ITI_MS);
+      if (interruptRequested) return false;
     }
+    return true;
   }
 
   async function runPictureMatching(assignment, assets, rows) {
@@ -677,9 +794,12 @@
         audio_file: path,
         visual_mode: visualMode,
       }));
+      saveCheckpoint(assignment, rows);
       showFixation();
       await delay(LEARNING_ITI_MS);
+      if (interruptRequested) return false;
     }
+    return true;
   }
 
   function baseRow(assignment, row) {
@@ -793,6 +913,38 @@
     }
   }
 
+  function requestInterrupt() {
+    if (!activeRun) return;
+    interruptRequested = true;
+    els.interruptBtn.disabled = true;
+    setStatus("現在の試行後に中断します。");
+    setLog("現在の試行が終わると中断ファイルを保存します。画面を閉じずにお待ちください。");
+  }
+
+  async function finishInterrupted(assignment, rows, recordings) {
+    saveCheckpoint(assignment, rows, "interrupted");
+    showMessage("中断しました。\nファイルを作成しています。");
+    const resultPackage = await buildResultPackage(assignment, rows, recordings);
+    if (downloadBlobUrl) URL.revokeObjectURL(downloadBlobUrl);
+    downloadBlobUrl = URL.createObjectURL(resultPackage.blob);
+    lastDownloadMeta = {
+      participantId: assignment.participantId,
+      phaseMode: assignment.phaseMode,
+      extension: resultPackage.extension,
+      label: resultPackage.label,
+      status: "partial",
+    };
+    els.downloadBtn.disabled = false;
+    els.prepareBtn.disabled = false;
+    if (els.autoDownload.checked) {
+      downloadResults();
+      setStatus(`中断しました。中断${resultPackage.label}を保存しました。`);
+    } else {
+      setStatus(`中断しました。中断${resultPackage.label}を保存してください。`);
+    }
+    setLog(`partial_rows: ${rows.length}\nrecordings: ${recordings.length}\nresult_file_type: ${resultPackage.extension}`);
+  }
+
   async function start() {
     if (!prepared) {
       setStatus("先に準備を実行してください。");
@@ -801,18 +953,38 @@
     els.startBtn.disabled = true;
     els.prepareBtn.disabled = true;
     els.downloadBtn.disabled = true;
+    els.interruptBtn.disabled = false;
     document.body.classList.add("running");
     const rows = [];
     const recordings = [];
     const { assignment, assets } = prepared;
+    activeRun = { assignment, rows, recordings };
+    interruptRequested = false;
+    saveCheckpoint(assignment, rows, "started");
     try {
       if (assignment.phaseMode === "learning" || assignment.phaseMode === "full") {
-        await runLearning(assignment, assets, rows);
+        const completed = await runLearning(assignment, assets, rows);
+        if (!completed) {
+          await finishInterrupted(assignment, rows, recordings);
+          return;
+        }
       }
       if (assignment.phaseMode === "tests" || assignment.phaseMode === "full") {
-        await runL2ToL1(assignment, assets, rows);
-        await runProduction(assignment, assets, rows, recordings);
-        await runPictureMatching(assignment, assets, rows);
+        let completed = await runL2ToL1(assignment, assets, rows);
+        if (!completed) {
+          await finishInterrupted(assignment, rows, recordings);
+          return;
+        }
+        completed = await runProduction(assignment, assets, rows, recordings);
+        if (!completed) {
+          await finishInterrupted(assignment, rows, recordings);
+          return;
+        }
+        completed = await runPictureMatching(assignment, assets, rows);
+        if (!completed) {
+          await finishInterrupted(assignment, rows, recordings);
+          return;
+        }
       }
       if (assignment.phaseMode === "learning") {
         showMessage("このセッションは終了しました。\nファイルを作成しています。");
@@ -827,9 +999,11 @@
         phaseMode: assignment.phaseMode,
         extension: resultPackage.extension,
         label: resultPackage.label,
+        status: "complete",
       };
       els.downloadBtn.disabled = false;
       els.prepareBtn.disabled = false;
+      clearCheckpoint(assignment);
       if (els.autoDownload.checked) {
         downloadResults();
         setStatus(`完了。${resultPackage.label}を保存しました。必要なら再保存できます。`);
@@ -843,6 +1017,9 @@
       els.prepareBtn.disabled = false;
     } finally {
       document.body.classList.remove("running");
+      els.interruptBtn.disabled = true;
+      activeRun = null;
+      interruptRequested = false;
       prepared = null;
     }
   }
@@ -855,9 +1032,10 @@
     const participantId = lastDownloadMeta?.participantId || els.participantId.value.trim() || "participant";
     const phaseMode = lastDownloadMeta?.phaseMode || els.phaseMode.value || "session";
     const extension = lastDownloadMeta?.extension || "zip";
+    const resultKind = lastDownloadMeta?.status === "partial" ? "partial" : "results";
     const a = document.createElement("a");
     a.href = downloadBlobUrl;
-    a.download = `${participantId}_${phaseMode}_vocabulary_task_results.${extension}`;
+    a.download = `${participantId}_${phaseMode}_vocabulary_task_${resultKind}.${extension}`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -882,6 +1060,7 @@
 
   window.addEventListener("beforeunload", (event) => {
     if (!document.body.classList.contains("running")) return;
+    if (activeRun) saveCheckpoint(activeRun.assignment, activeRun.rows, "browser_leave");
     event.preventDefault();
     event.returnValue = "";
   });
@@ -889,6 +1068,11 @@
   els.prepareBtn.addEventListener("click", prepare);
   els.startBtn.addEventListener("click", start);
   els.downloadBtn.addEventListener("click", downloadResults);
+  els.interruptBtn.addEventListener("click", requestInterrupt);
+  els.recoveryDownloadBtn.addEventListener("click", downloadCheckpoint);
+  els.recoveryClearBtn.addEventListener("click", clearLatestCheckpoint);
+  window.addEventListener("storage", updateRecoveryCard);
   document.body.classList.toggle("debug", DEBUG_MODE);
   applyQueryDefaults();
+  updateRecoveryCard();
 })();

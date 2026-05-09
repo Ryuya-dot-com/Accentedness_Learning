@@ -208,9 +208,19 @@ button {
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
+button.secondary {
+  border: 1px solid #c8d6d0;
+  background: #eef5f1;
+  color: var(--accent-strong);
+}
+
 button:hover:not(:disabled) {
   background: var(--accent-strong);
   transform: translateY(-1px);
+}
+
+button.secondary:hover:not(:disabled) {
+  background: #dcebe5;
 }
 
 button.success {
@@ -254,10 +264,23 @@ body.running #setup-panel {
   margin-bottom: 12px;
 }
 
+.progress-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 7px;
+}
+
 #progress-label {
   color: var(--muted);
   font-size: 0.9rem;
-  margin-bottom: 7px;
+}
+
+.interrupt-btn {
+  min-width: 112px;
+  padding: 7px 11px;
+  font-size: 0.82rem;
 }
 
 #progress-track {
@@ -382,6 +405,45 @@ body.running #setup-panel {
   display: none;
 }
 
+.recovery-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  border: 1px solid #c9d9d2;
+  border-radius: 8px;
+  background: #fbfdfb;
+  padding: 13px 14px;
+}
+
+.recovery-card strong,
+.recovery-card span {
+  display: block;
+}
+
+.recovery-card strong {
+  color: var(--text);
+}
+
+.recovery-card span {
+  margin-top: 3px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.recovery-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.recovery-actions button {
+  min-width: 84px;
+  padding: 8px 11px;
+}
+
 body.running #status,
 body.running #log {
   display: none;
@@ -420,5 +482,12 @@ body.running #log {
 
   button {
     flex: 1 1 100%;
+  }
+
+  .progress-top,
+  .recovery-card,
+  .recovery-actions {
+    align-items: stretch;
+    display: grid;
   }
 }

@@ -51,7 +51,15 @@ Vocabulary_Platform/?phase=learning&code=A&participant=001
 Vocabulary_Platform/?phase=tests&code=A&participant=001
 ```
 
-Use `mode=demo` for a short smoke test and `mode=full` for the full schedule. The neutral public codes are `A`, `B`, and `C`; legacy `accent=J`, `accent=E`, and `accent=C` links still work for researcher-side compatibility but should not be distributed to participants.
+Use `mode=demo` for a short smoke test and `mode=full` for the full schedule. The neutral public codes are `A`, `B`, and `C`; legacy `accent=J`, `accent=E`, and `accent=C` links still work for researcher-side compatibility but should not be distributed to participants. The participant UI exposes these as a dropdown rather than free text.
+
+## Interruptions
+
+During a running session, the page warns before browser unload and writes a checkpoint to localStorage after each completed trial. Participants can use the `中断して保存` button to stop after the current trial and download a partial result package. If the browser is closed unexpectedly, the next visit shows the latest checkpoint so the partial CSV can be downloaded or cleared.
+
+Production recordings are included in the partial ZIP only when the participant uses the in-page interruption button while the tab is still open. If the browser is force-closed during a production recording, the localStorage checkpoint preserves trial metadata but cannot preserve the in-memory audio blob.
+
+This is a partial-save workflow, not a true trial-level resume workflow. If a participant must continue later, keep the partial package and start a new assigned session; merge the files during scoring or exclude the interrupted run according to the study protocol.
 
 ## Audio Layout
 
