@@ -9,21 +9,10 @@
   const PHASE_MODES = ["learning", "tests", "full"];
   const CHECKPOINT_PREFIX = "vocabulary_task_checkpoint:";
   const ACCENT_ALIASES = {
-    a: "japanese",
-    "code-a": "japanese",
-    groupa: "japanese",
-    "group-a": "japanese",
     j: "japanese",
     japanese: "japanese",
-    b: "english",
-    "code-b": "english",
-    groupb: "english",
-    "group-b": "english",
     e: "english",
     english: "english",
-    "code-c": "chinese",
-    groupc: "chinese",
-    "group-c": "chinese",
     c: "chinese",
     chinese: "chinese",
   };
