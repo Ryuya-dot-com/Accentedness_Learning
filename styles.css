@@ -117,18 +117,6 @@ label {
   font-size: 0.92rem;
 }
 
-.checkbox-row {
-  grid-template-columns: auto 1fr;
-  align-items: center;
-  gap: 10px;
-  min-height: 42px;
-  padding: 25px 0 0;
-}
-
-.checkbox-row input {
-  width: auto;
-}
-
 input,
 select,
 button {
@@ -153,16 +141,11 @@ summary:focus-visible {
   outline-offset: 2px;
 }
 
-.advanced-settings,
-.save-option {
+.advanced-settings {
   margin-top: 18px;
   border-top: 1px solid var(--panel-border);
   border-bottom: 1px solid var(--panel-border);
   padding: 14px 0;
-}
-
-.save-option .checkbox-row {
-  padding: 0;
 }
 
 .advanced-settings summary {

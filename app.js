@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_learning_v0.8.3";
+  const VERSION = "accented_learning_v0.8.4";
   const FULL_EXPOSURES_PER_WORD = 6;
   const LEARNING_ITI_MS = 650;
   const VISUAL_TO_AUDIO_MS = 750;
