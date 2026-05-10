@@ -1,5 +1,5 @@
 (() => {
-  const VERSION = "accented_learning_v0.8.2";
+  const VERSION = "accented_learning_v0.8.3";
   const FULL_EXPOSURES_PER_WORD = 6;
   const LEARNING_ITI_MS = 650;
   const VISUAL_TO_AUDIO_MS = 750;
@@ -1453,6 +1453,8 @@
     if (pid) els.participantId.value = pid;
     if (autoDownload !== null) {
       els.autoDownload.checked = !["0", "false", "no", "off"].includes(autoDownload.trim().toLowerCase());
+    } else {
+      els.autoDownload.checked = true;
     }
   }
 
